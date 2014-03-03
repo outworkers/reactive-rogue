@@ -1,5 +1,29 @@
+# Project files
+.history
+logs/
+stats
+tmp
+.credentials_nexus
+
+# MacOS X files
+.DS_Store
+
+# Eclipse 
+.cache
 target/
-project/sbt-launch-*.jar
-*.log
-dependencies/
-mongo-testdb/
+.classpath
+.project
+.settings/
+
+# JRebel
+
+#SBT
+build.sbt
+.metadata
+project/target/
+
+# Idea
+.idea/
+.idea_modules/
+*.iml
+atlassian-ide-plugin.xml

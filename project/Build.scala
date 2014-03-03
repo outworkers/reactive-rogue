@@ -41,7 +41,7 @@ object ReactiveRogue extends Build {
          "-feature",
          "-unchecked"
      )
-  ) ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ VersionManagement.newSettings
+  ) ++ net.virtualvoid.sbt.graph.Plugin.graphSettings ++ VersionManagement.newSettings ++ publishSettings
 
   lazy val reactiveRogue = Project(
     id = "reactiverogue",
