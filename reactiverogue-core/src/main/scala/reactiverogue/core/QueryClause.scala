@@ -21,15 +21,21 @@ abstract class QueryClause[+V](val fieldName: String, val actualIndexBehavior: M
 abstract class IndexableQueryClause[V, Ind <: MaybeIndexed](fname: String, actualIB: Ind, conds: (CondOps.Value, BSONValue)*)
   extends QueryClause[V](fname, actualIB, conds: _*)
 
+case class NegatedQueryClause[+V](clause: QueryClause[V], override val expectedIndexBehavior: MaybeIndexed = Index) extends QueryClause[V](
+  clause.fieldName, clause.actualIndexBehavior, CondOps.Not -> BSONDocument(clause.conditions.map({ case (k, v) => k.toString -> v }))) {
+
+  override def withExpectedIndexBehavior(b: MaybeIndexed): QueryClause[V] = this.copy(expectedIndexBehavior = b)
+}
+
 trait ShardKeyClause
 
 case class AllQueryClause[V](override val fieldName: String, vs: List[BSONValue], override val expectedIndexBehavior: MaybeIndexed = Index)
-    extends IndexableQueryClause[List[V], Index](fieldName, Index, CondOps.All -> (BSONArray(vs.map(v => util.Try(v)).toStream))) {
+    extends IndexableQueryClause[List[V], Index](fieldName, Index, CondOps.All -> BSONArray(vs)) {
   override def withExpectedIndexBehavior(b: MaybeIndexed): AllQueryClause[V] = this.copy(expectedIndexBehavior = b)
 }
 
 case class InQueryClause[V](override val fieldName: String, vs: List[BSONValue], override val expectedIndexBehavior: MaybeIndexed = Index)
-    extends IndexableQueryClause[List[V], Index](fieldName, Index, CondOps.In -> (BSONArray(vs.map(v => util.Try(v)).toStream))) {
+    extends IndexableQueryClause[List[V], Index](fieldName, Index, CondOps.In -> BSONArray(vs)) {
   override def withExpectedIndexBehavior(b: MaybeIndexed): InQueryClause[V] = this.copy(expectedIndexBehavior = b)
 }
 
@@ -83,7 +89,7 @@ case class NearSphereQueryClause[V](override val fieldName: String, lat: Double,
 }
 
 case class ModQueryClause[V](override val fieldName: String, v: List[BSONValue], override val expectedIndexBehavior: MaybeIndexed = Index)
-    extends IndexableQueryClause[List[V], IndexScan](fieldName, IndexScan, CondOps.Mod -> (BSONArray(v.map(v => util.Try(v)).toStream))) {
+    extends IndexableQueryClause[List[V], IndexScan](fieldName, IndexScan, CondOps.Mod -> BSONArray(v)) {
   override def withExpectedIndexBehavior(b: MaybeIndexed): ModQueryClause[V] = this.copy(expectedIndexBehavior = b)
 }
 
@@ -98,7 +104,7 @@ case class ExistsQueryClause(override val fieldName: String, v: Boolean, overrid
 }
 
 case class NinQueryClause[V](override val fieldName: String, vs: List[BSONValue], override val expectedIndexBehavior: MaybeIndexed = Index)
-    extends IndexableQueryClause[List[V], DocumentScan](fieldName, DocumentScan, CondOps.Nin -> (BSONArray(vs.map(v => util.Try(v)).toStream))) {
+    extends IndexableQueryClause[List[V], DocumentScan](fieldName, DocumentScan, CondOps.Nin -> BSONArray(vs)) {
   override def withExpectedIndexBehavior(b: MaybeIndexed): NinQueryClause[V] = this.copy(expectedIndexBehavior = b)
 }
 
@@ -199,7 +205,7 @@ class ModifyClause(val operator: ModOps.Value, fields: (String, BSONValue)*) {
 class ModifyAddEachClause[T](fieldName: String, values: Traversable[BSONValue])
     extends ModifyClause(ModOps.AddToSet) {
   override def extend(q: ListBuffer[(String, BSONValue)]): Unit = {
-    q += fieldName -> BSONDocument("$each" -> (BSONArray(values.map(v => util.Try(v)).toStream)))
+    q += fieldName -> BSONDocument("$each" -> BSONArray(values))
   }
 }
 
@@ -219,7 +225,7 @@ class ModifyPullWithPredicateClause[V](fieldName: String, clauses: Seq[QueryClau
     extends ModifyClause(ModOps.Pull) {
   override def extend(q: ListBuffer[(String, BSONValue)]): Unit = {
     import reactiverogue.core.MongoHelpers.AndCondition
-    MongoHelpers.MongoBuilder.buildCondition(AndCondition(clauses.toList, None), q, false)
+    MongoHelpers.MongoBuilder.buildCondition(AndCondition(clauses.toList, None), q, signature = false)
   }
 }
 
@@ -228,7 +234,7 @@ class ModifyPullObjWithPredicateClause[V](fieldName: String, clauses: Seq[QueryC
   override def extend(q: ListBuffer[(String, BSONValue)]): Unit = {
     import reactiverogue.core.MongoHelpers.AndCondition
     val nestedBuff = ListBuffer.empty[(String, BSONValue)]
-    MongoHelpers.MongoBuilder.buildCondition(AndCondition(clauses.toList, None), nestedBuff, false)
+    MongoHelpers.MongoBuilder.buildCondition(AndCondition(clauses.toList, None), nestedBuff, signature = false)
     q += fieldName -> BSONDocument(nestedBuff)
   }
 }

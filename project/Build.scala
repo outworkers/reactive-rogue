@@ -15,7 +15,7 @@ object ReactiveRogue extends Build {
    val sharedSettings: Seq[sbt.Project.Setting[_]] = Seq(
      organization := "com.newzly",
      version := "0.0.1",
-     scalaVersion := "2.10.3",
+     scalaVersion := "2.10.4",
      resolvers ++= Seq(
       "Sonatype repo"                    at "https://oss.sonatype.org/content/groups/scala-tools/",
       "Sonatype releases"                at "https://oss.sonatype.org/content/repositories/releases",
@@ -26,11 +26,7 @@ object ReactiveRogue extends Build {
       "newzly repository"                at "http://maven.newzly.com/repository/internal",
       "Twitter Repository"               at "http://maven.twttr.com"
      ),
-     libraryDependencies ++= Seq(
-       "com.github.nscala-time"  %% "nscala-time"                       % "0.4.2"
-     ),
      unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
-     unmanagedResourceDirectories in Test <+= baseDirectory { _ / "src/main/webapp" },
      scalacOptions ++= Seq(
          "-language:postfixOps",
          "-language:implicitConversions",

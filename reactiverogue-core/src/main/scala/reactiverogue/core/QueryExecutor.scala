@@ -2,9 +2,7 @@
 
 package reactiverogue.core
 
-import com.foursquare.field.Field
 import reactiverogue.core.MongoHelpers.{ MongoModify, MongoSelect }
-import scala.collection.mutable.ListBuffer
 import reactivemongo.core.commands.GetLastError
 import reactivemongo.bson.BSONDocument
 import scala.concurrent.{ Future, ExecutionContext }
@@ -22,6 +20,10 @@ trait QueryExecutor[MB] extends Rogue {
   def optimizer: QueryOptimizer
 
   def defaultWriteConcern: GetLastError
+
+  val EmptyResult =
+    LastError(ok = true, err = None, code = None, errMsg = None,
+      originalDocument = None, updated = 0, updatedExisting = false)
 
   protected def serializer[M <: MB, R](
     meta: M,
@@ -86,18 +88,6 @@ trait QueryExecutor[MB] extends Rogue {
     }
   }
 
-  private def drainBuffer[A, B](
-    from: ListBuffer[A],
-    to: ListBuffer[B],
-    f: List[A] => List[B],
-    size: Int): Unit = {
-    // ListBuffer#length is O(1) vs ListBuffer#size is O(N) (true in 2.9.x, fixed in 2.10.x)
-    if (from.length >= size) {
-      to ++= f(from.toList)
-      from.clear
-    }
-  }
-
   //  def fetchBatch[M <: MB, R, T, State](query: Query[M, R, State],
   //                                       batchSize: Int)
   //                                      (f: List[R] => List[T])
@@ -131,9 +121,9 @@ trait QueryExecutor[MB] extends Rogue {
 
   def updateOne[M <: MB, State](
     query: ModifyQuery[M, State],
-    writeConcern: GetLastError = defaultWriteConcern)(implicit ev: RequireShardKey[M, State], ec: ExecutionContext): Unit = {
+    writeConcern: GetLastError = defaultWriteConcern)(implicit ev: RequireShardKey[M, State], ec: ExecutionContext): Future[LastError] = {
     if (optimizer.isEmptyQuery(query)) {
-      ()
+      Future.successful(EmptyResult)
     } else {
       adapter.modify(query, upsert = false, multi = false, writeConcern = writeConcern)
     }
@@ -141,9 +131,9 @@ trait QueryExecutor[MB] extends Rogue {
 
   def upsertOne[M <: MB, State](
     query: ModifyQuery[M, State],
-    writeConcern: GetLastError = defaultWriteConcern)(implicit ev: RequireShardKey[M, State], ec: ExecutionContext): Unit = {
+    writeConcern: GetLastError = defaultWriteConcern)(implicit ev: RequireShardKey[M, State], ec: ExecutionContext): Future[LastError] = {
     if (optimizer.isEmptyQuery(query)) {
-      ()
+      Future.successful(EmptyResult)
     } else {
       adapter.modify(query, upsert = true, multi = false, writeConcern = writeConcern)
     }
@@ -151,9 +141,9 @@ trait QueryExecutor[MB] extends Rogue {
 
   def updateMulti[M <: MB, State](
     query: ModifyQuery[M, State],
-    writeConcern: GetLastError = defaultWriteConcern)(implicit ec: ExecutionContext): Unit = {
+    writeConcern: GetLastError = defaultWriteConcern)(implicit ec: ExecutionContext): Future[LastError] = {
     if (optimizer.isEmptyQuery(query)) {
-      ()
+      Future.successful(EmptyResult)
     } else {
       adapter.modify(query, upsert = false, multi = true, writeConcern = writeConcern)
     }

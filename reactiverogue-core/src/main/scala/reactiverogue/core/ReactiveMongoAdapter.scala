@@ -8,7 +8,6 @@ import reactivemongo.bson._
 import reactivemongo.api._
 import reactivemongo.api.collections.default._
 import reactivemongo.core.commands._
-import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Future, ExecutionContext }
 import play.api.libs.iteratee.Iteratee
 import reactivemongo.api.collections.GenericQueryBuilder
@@ -23,6 +22,10 @@ class ReactiveMongoAdapter[MB](dbCollectionFactory: DBCollectionFactory[MB]) {
 
   import QueryHelpers._
   import MongoHelpers.MongoBuilder._
+
+  val EmptyResult =
+    LastError(ok = true, err = None, code = None, errMsg = None,
+      originalDocument = None, updated = 0, updatedExisting = false)
 
   //TODO: make it looking for async commands
   private[reactiverogue] def runCommand[M <: MB, T](description: => String,
@@ -100,17 +103,17 @@ class ReactiveMongoAdapter[MB](dbCollectionFactory: DBCollectionFactory[MB]) {
 
     runCommand(description, queryClause) {
       val coll = dbCollectionFactory.getPrimaryDBCollection(query)
-      coll.remove(cnd, writeConcern, false)
+      coll.remove(cnd, writeConcern, firstMatchOnly = false)
     }
   }
 
   def modify[M <: MB](mod: ModifyQuery[M, _],
     upsert: Boolean,
     multi: Boolean,
-    writeConcern: GetLastError)(implicit ec: ExecutionContext): Unit = {
+    writeConcern: GetLastError)(implicit ec: ExecutionContext): Future[LastError] = {
     val modClause = transformer.transformModify(mod)
     validator.validateModify(modClause)
-    if (!modClause.mod.clauses.isEmpty) {
+    if (modClause.mod.clauses.nonEmpty) {
       val q = buildCondition(modClause.query.condition)
       val m = buildModify(modClause.mod)
       lazy val description = buildModifyString(mod.query.collectionName, modClause, upsert = upsert, multi = multi)
@@ -119,6 +122,8 @@ class ReactiveMongoAdapter[MB](dbCollectionFactory: DBCollectionFactory[MB]) {
         val coll = dbCollectionFactory.getPrimaryDBCollection(modClause.query)
         coll.update(q, m, writeConcern, upsert, multi)
       }
+    } else {
+      Future.successful(EmptyResult)
     }
   }
 
@@ -161,12 +166,12 @@ class ReactiveMongoAdapter[MB](dbCollectionFactory: DBCollectionFactory[MB]) {
     val cnd = buildCondition(queryClause.condition)
     val ord = queryClause.order.map(buildOrder)
     val sel = queryClause.select.map(buildSelect).getOrElse(BSONDocument())
-    val hnt = queryClause.hint.map(buildHint)
+    //    val hnt = queryClause.hint.map(buildHint)
 
     val coll = dbCollectionFactory.getDBCollection(query)
     val opts = QueryOpts(skipN = queryClause.sk.getOrElse(0), batchSizeN = batchSize.getOrElse(0))
     def _qry = coll.find(cnd, sel).options(opts)
-    def qb = ord.map(_qry.sort).getOrElse(_qry)
+    def qb = ord.fold(_qry)(_qry.sort)
     qb
   }
 

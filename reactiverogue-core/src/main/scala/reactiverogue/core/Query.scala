@@ -2,7 +2,7 @@
 
 package reactiverogue.core
 
-import com.foursquare.index.MongoIndex
+import scala.language.existentials
 import reactiverogue.core.MongoHelpers.{
   AndCondition,
   MongoBuilder,
@@ -76,6 +76,12 @@ case class Query[M, R, +State](
    */
   def and[F](clause: M => QueryClause[F]) =
     addClause(clause, expectedIndexBehavior = Index)
+
+  /**
+   * Adds a negated clause to the query.
+   */
+  def not[F](clause: M => QueryClause[F]) =
+    addClause(clause andThen (NegatedQueryClause(_)), expectedIndexBehavior = Index)
 
   /**
    * Adds an iscan clause to a query.
@@ -219,6 +225,7 @@ case class Query[M, R, +State](
     ev2: ShardingOk[M, State]): ModifyQuery[M, State] = {
     ModifyQuery(this, MongoModify(Nil)).modify(clause)
   }
+
   def modifyOpt[V](opt: Option[V])(clause: (M, V) => ModifyClause)(implicit ev1: Required[State, Unselected with Unlimited with Unskipped],
     ev2: ShardingOk[M, State]): ModifyQuery[M, State] = {
     ModifyQuery(this, MongoModify(Nil)).modifyOpt(opt)(clause)
@@ -501,5 +508,6 @@ case class FindAndModifyQuery[M, R](
   def andOpt[V](opt: Option[V])(clause: (M, V) => ModifyClause) =
     addClauseOpt(opt)(clause)
 
-  override def toString: String = MongoBuilder.buildFindAndModifyString(query.collectionName, this, false, false, false)
+  override def toString: String =
+    MongoBuilder.buildFindAndModifyString(query.collectionName, this, returnNew = false, upsert = false, remove = false)
 }

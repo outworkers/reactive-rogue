@@ -7,11 +7,10 @@ import com.foursquare.field.{
   OptionalField => ROptionalField,
   RequiredField => RRequiredField
 }
-import reactiverogue.core.MongoHelpers.MongoModify
 import java.util.Date
 import org.joda.time.DateTime
 import reactiverogue.mongodb.BSONSerializable
-
+import scala.language.implicitConversions
 import reactivemongo.bson._
 
 /**
