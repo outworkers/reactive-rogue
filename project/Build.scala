@@ -22,8 +22,8 @@ object ReactiveRogue extends Build {
       "Sonatype snapshots"               at "https://oss.sonatype.org/content/repositories/snapshots",
       "Sonatype staging"                 at "http://oss.sonatype.org/content/repositories/staging",
       "Java.net Maven2 Repository"       at "http://download.java.net/maven/2/",
-      "newzly snapshots"                 at "http://maven.newzly.com/repository/snapshots",
-      "newzly repository"                at "http://maven.newzly.com/repository/internal",
+      "Websudos snapshots"               at "http://maven.websudos.co.uk/ext-release-snapshots",
+      "Websudos repository"              at "http://maven.websudos.co.uk/ext-release-local",
       "Twitter Repository"               at "http://maven.twttr.com"
      ),
      unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
