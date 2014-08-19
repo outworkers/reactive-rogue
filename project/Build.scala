@@ -13,7 +13,7 @@ object ReactiveRogue extends Build {
   )
 
    val sharedSettings: Seq[sbt.Project.Setting[_]] = Seq(
-     organization := "com.newzly",
+     organization := "com.websudos",
      version := "0.0.1",
      scalaVersion := "2.10.4",
      resolvers ++= Seq(
