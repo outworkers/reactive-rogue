@@ -1,11 +1,9 @@
 package reactiverogue.core
 
-// Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
-
+import scala.concurrent.{ Future, ExecutionContext }
 import com.foursquare.field.Field
 import reactiverogue.core.MongoHelpers.MongoSelect
 import reactiverogue.core.Rogue._
-import concurrent.{ Future, ExecutionContext }
 import reactivemongo.core.commands.GetLastError
 import reactivemongo.core.commands.LastError
 

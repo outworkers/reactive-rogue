@@ -59,7 +59,7 @@ object ReactiveRogue extends Build {
     libraryDependencies ++= Seq(
       "joda-time"             %  "joda-time"              % "2.1",
       "org.joda"              %  "joda-convert"           % "1.4",
-      "com.typesafe.play"     %% "play-json"              % "2.2.1",
+      "com.typesafe.play"     %% "play-json"              % "2.2.2",
       "org.reactivemongo"     %% "play2-reactivemongo"    % "0.10.2",
       "org.reactivemongo"     %% "reactivemongo"          % "0.10.0"
     )
