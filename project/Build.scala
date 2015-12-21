@@ -12,10 +12,13 @@ object ReactiveRogue extends Build {
     pomIncludeRepository := { _ => true }
   )
 
+  
+
    val sharedSettings: Seq[sbt.Project.Setting[_]] = Seq(
      organization := "com.websudos",
      version := "0.0.1",
-     scalaVersion := "2.10.4",
+     scalaVersion := "2.10.5",
+     crossScalaVersions = "2.11.7",
      resolvers ++= Seq(
       "Sonatype repo"                    at "https://oss.sonatype.org/content/groups/scala-tools/",
       "Sonatype releases"                at "https://oss.sonatype.org/content/repositories/releases",
