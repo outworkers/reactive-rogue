@@ -8,6 +8,7 @@ lazy val Versions = new {
   val jodaConvert = "1.8.1"
   val playJson = "2.6.0-M7"
   val reactiveMongo = "0.12.3"
+  val specs2 = "3.8.9-20170417195349-7b7973e"
 }
 
  val sharedSettings: Seq[Def.Setting[_]] = Seq(
@@ -86,9 +87,9 @@ lazy val dsl = Project(
 ).settings(
   name := "reactiverogue-record-dsl",
   libraryDependencies ++= Seq(
-    "junit"                 % "junit"                   % "4.5"         % Test,
-    "com.novocode"          % "junit-interface"         % "0.6"         % Test,
-    "org.specs2"            %% "specs2"                 % "1.12.3"      % Test
+    "junit"                 % "junit"                   % "4.5" % Test,
+    "com.novocode"          % "junit-interface"         % "0.6" % Test,
+    "org.specs2"            %% "specs2-core"            % Versions.specs2 % Test
   )
 ).dependsOn(
   core,
