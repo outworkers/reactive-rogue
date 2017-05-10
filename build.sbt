@@ -74,11 +74,7 @@ lazy val core = Project(
   base = file("reactiverogue-core"),
   settings = sharedSettings
 ).settings(
-  name := "reactiverogue-core",
-  libraryDependencies ++= Seq(
-     "com.foursquare" %% "rogue-field" % Versions.rogue intransitive(),
-     "com.foursquare" %% "rogue-index" % Versions.rogue intransitive()
-  )
+  name := "reactiverogue-core"
 ).dependsOn(
   mongodb
 )
