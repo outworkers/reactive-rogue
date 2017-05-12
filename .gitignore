@@ -11,6 +11,12 @@ tmp
 # Eclipse
 .cache
 target/
+project/sbt-launch-*.jar
+*.log
+dependencies/
+mongo-testdb/
+.idea/
+.DS_Store
 .classpath
 .project
 .settings/
