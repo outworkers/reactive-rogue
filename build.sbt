@@ -2,15 +2,16 @@ import sbt._
 import Keys._
 import com.twitter.sbt._
 
-lazy val Versions = {
+lazy val Versions = new {
   val rogue = "2.2.0"
   val joda = "2.9.7"
   val jodaConvert = "1.8.1"
   val playJson = "2.6.0-M7"
   val reactiveMongo = "0.12.3"
+  val specs2 = "3.8.9-20170417195349-7b7973e"
 }
 
- val sharedSettings: Seq[sbt.Project.Setting[_]] = Seq(
+ val sharedSettings: Seq[Def.Setting[_]] = Seq(
    organization := "com.outworkers",
    version := "0.1.0",
    scalaVersion := "2.11.8",
@@ -19,83 +20,70 @@ lazy val Versions = {
      Resolver.typesafeRepo("releases"),
      Resolver.sonatypeRepo("releases")
    ),
-   unmanagedSourceDirectories in Compile <<= (scalaSource in Compile)(Seq(_)),
-   scalacOptions ++= Seq(
-       "-language:postfixOps",
-       "-language:implicitConversions",
-       "-language:reflectiveCalls",
-       "-language:higherKinds",
-       "-language:existentials",
-       "-deprecation",
-       "-feature",
-       "-unchecked"
-   )
-) ++ VersionManagement.newSettings ++ publishSettings
 
-lazy val reactiveRogue = Project(
-  id = "reactiverogue",
-  base = file("."),
-  settings = Project.defaultSettings
-).aggregate(
-  mongodb,
-  record,
-  core,
-  dsl
+) ++ VersionManagement.newSettings ++ Publishing.effectiveSettings ++ Defaults.coreDefaultSettings
+
+
+lazy val commonSettings = Seq(
+  organization := "com.outworkers",
+	
+  scalaVersion := "2.11.8",
+  crossScalaVersions := Seq("2.11.8", "2.12.1"),
+  version := "0.5.0.rc2",
+  licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
+  sonatypeProfileName := "com.whisk",
+  pomExtra in Global := {
+    <url>https://github.com/whisklabs/docker-it-scala</url>
+      <scm>
+        <connection>scm:git:github.com/whisklabs/reactiverogue.git</connection>
+        <developerConnection>scm:git:git@github.com:whisklabs/reactiverogue.git</developerConnection>
+        <url>github.com/whisklabs/reactiverogue.git</url>
+      </scm>
+      <developers>
+        <developer>
+          <id>viktortnk</id>
+          <name>Viktor Taranenko</name>
+          <url>https://github.com/viktortnk</url>
+        </developer>
+      </developers>
+  }
 )
 
-lazy val mongodb = Project(
-  id = "reactiverogue-mongodb",
-  base = file("reactiverogue-mongodb"),
-  settings = Project.defaultSettings ++ sharedSettings
-).settings(
-  name := "reactiverogue-mongodb",
-  libraryDependencies ++= Seq(
-    "joda-time"             %  "joda-time"              % Versions.joda,
-    "org.joda"              %  "joda-convert"           % Versions.jodaConvert,
-    "com.typesafe.play"     %% "play-json"              % Versions.playJson,
-    "org.reactivemongo"     %% "reactivemongo"          % Versions.reactiveMongo
-  )
-)
+def module(name: String) =
+  Project(name, file(name))
+    .settings(commonSettings: _*)
+    .settings(
+      scalacOptions ++= Seq("-feature", "-deprecation")
+    )
 
-lazy val record = Project(
-  id = "reactiverogue-record",
-  base = file("reactiverogue-record"),
-  settings = Project.defaultSettings ++ sharedSettings
-).settings(
-  name := "reactiverogue-record",
-  libraryDependencies ++= Seq(
-    "com.typesafe.play"     %% "play-json"              % Versions.playJson
-  )
-).dependsOn(
-  mongodb
-)
+lazy val root =
+  project
+    .in(file("."))
+    .settings(commonSettings: _*)
+    .settings(publish := {}, publishLocal := {}, packagedArtifacts := Map.empty)
+    .aggregate(bson, core, recordDsl)
 
-lazy val core = Project(
-  id = "reactiverogue-core",
-  base = file("reactiverogue-core"),
-  settings = Project.defaultSettings ++ sharedSettings
-).settings(
-  name := "reactiverogue-core",
-  libraryDependencies ++= Seq(
-     "com.foursquare" %% "rogue-field" % Versions.rogue intransitive(),
-     "com.foursquare" %% "rogue-index" % Versions.rogue intransitive()
-  )
-).dependsOn(
-  mongodb
-)
+lazy val bson =
+  module("reactiverogue-bson")
+    .settings(
+      libraryDependencies ++= Seq("org.reactivemongo" %% "reactivemongo-bson" % ReactivemongoVer))
 
-lazy val dsl = Project(
-  id = "reactiverogue-record-dsl",
-  base = file("reactiverogue-record-dsl"),
-  settings = Project.defaultSettings ++ sharedSettings
-).settings(
-  name := "reactiverogue-record-dsl",
-  libraryDependencies ++= Seq(
-    "junit"                 % "junit"                   % "4.5"         % Test,
-    "com.novocode"          % "junit-interface"         % "0.6"         % Test,
-    "org.specs2"            %% "specs2"                 % "1.12.3"      % Test
-  )
-).dependsOn(
-  core,
-  record
-)
+lazy val core =
+  module("reactiverogue-core")
+    .dependsOn(bson)
+    .settings(libraryDependencies ++= Seq(
+      "org.reactivemongo" %% "reactivemongo" % ReactivemongoVer,
+      "org.reactivemongo" %% "reactivemongo-iteratees" % ReactivemongoVer,
+      "org.reactivemongo" %% "reactivemongo-play-json" % ReactivemongoVer,
+      "com.typesafe.play" %% "play-json" % playVer.value
+    ))
+
+lazy val recordDsl =
+  module("reactiverogue-record-dsl")
+    .dependsOn(core)
+    .settings(libraryDependencies ++= Seq(
+      "junit" % "junit" % "4.12" % "test",
+      "org.scalatest" %% "scalatest" % "3.0.1" % "test",
+      "com.whisk" %% "docker-testkit-scalatest" % "0.9.1" % "test",
+      "com.whisk" %% "docker-testkit-impl-spotify" % "0.9.1" % "test"
+    ))

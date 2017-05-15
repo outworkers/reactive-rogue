@@ -2,9 +2,8 @@
 
 package reactiverogue.core
 
-import com.foursquare.index.MongoIndex
+import reactivemongo.api.commands.WriteConcern
 import reactivemongo.bson._
-import reactivemongo.core.commands.GetLastError
 
 case class Degrees(value: Double)
 case class Radians(value: Double)
@@ -29,18 +28,16 @@ object QueryHelpers {
   //    (net.liftweb.json.DefaultFormats + new ObjectIdSerializer + new DBObjectSerializer)
 
   trait QueryLogger {
-    def log(query: Query[_, _, _], instanceName: String, msg: => String, timeMillis: Long): Unit
-    def onExecuteQuery[T](query: Query[_, _, _], instanceName: String, msg: => String, func: => T): T
+    def log(query: Query[_, _, _], msg: => String, timeMillis: Long): Unit
+    def onExecuteQuery[T](query: Query[_, _, _], msg: => String, func: => T): T
     def logIndexMismatch(query: Query[_, _, _], msg: => String)
-    def logIndexHit(query: Query[_, _, _], index: MongoIndex[_])
     def warn(query: Query[_, _, _], msg: => String): Unit
   }
 
   class DefaultQueryLogger extends QueryLogger {
-    override def log(query: Query[_, _, _], instanceName: String, msg: => String, timeMillis: Long) {}
-    override def onExecuteQuery[T](query: Query[_, _, _], instanceName: String, msg: => String, func: => T): T = func
+    override def log(query: Query[_, _, _], msg: => String, timeMillis: Long) {}
+    override def onExecuteQuery[T](query: Query[_, _, _], msg: => String, func: => T): T = func
     override def logIndexMismatch(query: Query[_, _, _], msg: => String) {}
-    override def logIndexHit(query: Query[_, _, _], index: MongoIndex[_]) {}
     override def warn(query: Query[_, _, _], msg: => String) {}
   }
 
@@ -77,7 +74,8 @@ object QueryHelpers {
   class DefaultQueryTransformer extends QueryTransformer {
     override def transformQuery[M](query: Query[M, _, _]): Query[M, _, _] = { query }
     override def transformModify[M](modify: ModifyQuery[M, _]): ModifyQuery[M, _] = { modify }
-    override def transformFindAndModify[M, R](modify: FindAndModifyQuery[M, R]): FindAndModifyQuery[M, R] = { modify }
+    override def transformFindAndModify[M, R](
+        modify: FindAndModifyQuery[M, R]): FindAndModifyQuery[M, R] = { modify }
   }
 
   object NoopQueryTransformer extends DefaultQueryTransformer
@@ -85,11 +83,11 @@ object QueryHelpers {
   var transformer: QueryTransformer = NoopQueryTransformer
 
   trait QueryConfig {
-    def defaultWriteConcern: GetLastError
+    def defaultWriteConcern: WriteConcern
   }
 
   class DefaultQueryConfig extends QueryConfig {
-    override def defaultWriteConcern = GetLastError()
+    override def defaultWriteConcern = WriteConcern.Default
   }
 
   object DefaultQueryConfig extends DefaultQueryConfig
